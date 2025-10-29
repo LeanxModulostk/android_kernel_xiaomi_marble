@@ -46,6 +46,7 @@
 *.tar
 *.xz
 *.zst
+*Zone.Identifier*
 Module.symvers
 modules.builtin
 modules.order
