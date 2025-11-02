@@ -30,9 +30,9 @@ color_echo "$green" "工作目录: $SCRIPT_DIR"
 # --- 关键改进 2: 参数解析增强 ---
 # 参数处理
 TARGET_DEVICE=""
-KERNEL_NAME="GlowX"
-KERNEL_VERSION="v4.3"
-FIX_VERSION="4"
+KERNEL_NAME="GlowXXX"
+KERNEL_VERSION="v4.2"
+FIX_VERSION="2"
 USE_KSU=true       # 默认启用 KSU
 CCACHE_ENABLED=true
 NO_CLEAN=false
@@ -93,8 +93,8 @@ export CLANGXX_BIN="$CLANG_PATH/clang++"
 MAKE_ARGS="O=$BUILD_DIR"
 
 # 编译信息
-MAKE_ARGS+=" KBUILD_BUILD_HOST=AviderMin"
-MAKE_ARGS+=" KBUILD_BUILD_USER=GlowX"
+MAKE_ARGS+=" KBUILD_BUILD_HOST=Lean"
+MAKE_ARGS+=" KBUILD_BUILD_USER=GlowXXX"
 
 # 修改编译参数设置
 MAKE_ARGS+=" ARCH=arm64"
@@ -139,7 +139,7 @@ color_echo "$yellow" "目标设备:    $TARGET_DEVICE"
 color_echo "$yellow" "内核名称:    $KERNEL_NAME"
 color_echo "$yellow" "内核版本:    $KERNEL_VERSION"
 color_echo "$yellow" "修复版本:    $FIX_VERSION"
-color_echo "$yellow" "KernelSU:    $($USE_KSU && echo "启用" || echo "禁用")"
+color_echo "$yellow" "SukiSu Ultra:    $($USE_KSU && echo "启用" || echo "禁用")"
 color_echo "$yellow" "ThinLTO:     $($USE_THINLTO && echo "启用" || echo "禁用")"
 color_echo "$yellow" "ccache:      $($CCACHE_ENABLED && echo "启用" || echo "禁用")"
 color_echo "$yellow" "清理:        $($NO_CLEAN && echo "跳过" || echo "执行")"
@@ -170,22 +170,42 @@ make $MAKE_ARGS "${TARGET_DEVICE}_defconfig"
 
 # 根据 KSU 启用/禁用配置
 if $USE_KSU; then
-    color_echo "$green" "启用 KernelSU..."
+    color_echo "$green" "启用 SukiSu Ultra..."
     ./scripts/config --file "$BUILD_DIR/.config" \
         -e KSU \
         -e KSU_MANUAL_HOOK \
-        -e KSU_SUSFS \
-        -d KSU_SUSFS_SUS_SU \
-        -e KSU_MULTI_MANAGER_SUPPORT 
-
+        -e KSU_SUSFS_HAS_MAGIC_MOUNT \
+        -e KSU_SUSFS_SUS_MOUNT \
+        -e KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT \
+        -e KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT \
+        -e KSU_SUSFS_SUS_KSTAT \
+        -e KSU_SUSFS_TRY_UMOUNT \
+        -e KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT \
+        -e KSU_SUSFS_SPOOF_UNAME \
+        -e KSU_SUSFS_ENABLE_LOG \
+        -e KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
+        -e KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
+        -e KSU_MULTI_MANAGER_SUPPORT \
+        -d KSU_SUSFS_SUS_SU
 
 else
-    color_echo "$yellow" "禁用 KernelSU..."
+    color_echo "$yellow" "禁用 SukiSu Ultra..."
     ./scripts/config --file "$BUILD_DIR/.config" \
         -d KSU \
         -d KSU_MANUAL_HOOK \
-        -d KSU_SUSFS \
-        -d KSU_MULTI_MANAGER_SUPPORT 
+        -d KSU_SUSFS_HAS_MAGIC_MOUNT \
+        -d KSU_SUSFS_SUS_MOUNT \
+        -d KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT \
+        -d KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT \
+        -d KSU_SUSFS_SUS_KSTAT \
+        -d KSU_SUSFS_TRY_UMOUNT \
+        -d KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT \
+        -d KSU_SUSFS_SPOOF_UNAME \
+        -d KSU_SUSFS_ENABLE_LOG \
+        -d KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
+        -d KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
+        -d KSU_MULTI_MANAGER_SUPPORT \
+        -d KSU_SUSFS_SUS_SU
 fi
 
 # 处理LTO配置
@@ -227,14 +247,10 @@ ANY_KERNEL_DIR="$SCRIPT_DIR/anykernel"
 cp "$IMAGE_PATH" "$ANY_KERNEL_DIR"
 
 # 创建ZIP文件名
-KSU_STR=$($USE_KSU && echo "SU" || echo "NoSU")
+KSU_STR=$($USE_KSU && echo "SukiSu-Ultra" || echo "NoSU")
 ZIP_NAME="${TARGET_DEVICE}_${KERNEL_NAME}-${KERNEL_VERSION}_${KSU_STR}_$(date +%y%m%d)${FIX_VERSION}.zip"
 
 color_echo "$green" "创建刷机包: $ZIP_NAME"
 (cd "$ANY_KERNEL_DIR" && zip -r9 "$ZIP_NAME" ./* -x .git .gitignore out/ ./*.zip)
-
-mv "$ANY_KERNEL_DIR/$ZIP_NAME" "$BUILD_DIR/"
-
-color_echo "$green" "完成! 刷机包已保存到: [$BUILD_DIR/$ZIP_NAME]"
 
 color_echo "$green" "ALL DONE"
