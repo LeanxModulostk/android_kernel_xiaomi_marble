@@ -1,0 +1,39 @@
+name: Compile Kernel 3.9
+
+on:
+  workflow_dispatch:   # Solo manual
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          ref: glowxxx   # Tu rama principal
+
+      - name: Set up build environment
+        run: |
+          sudo apt update
+          sudo apt install -y bc bison build-essential  libncurses-dev ccache curl flex git libncurses5-dev libssl-dev libelf-dev patch make python3 unzip gcc g++ wget zip
+
+      - name: Download Google Clang r522817
+        run: |
+          mkdir clang
+          curl -L -o clang/clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/b6cafaac9b3c09f6cd81634f1cdd44606ae66d28/clang-r522817.tar.gz
+          tar -zxf clang/clang.tar.gz -C clang
+          echo "CLANG_PATH=$(pwd)/clang/bin" >> $GITHUB_ENV
+
+      - name: Run Kernel Build
+        run: |
+          chmod +x build.sh
+          ./build.sh marble   # SukiSu Ultra activo por defecto
+
+      - name: Uploading ZIP.
+        run: |
+          cd anykernel
+          curl -T *.zip -u :7a18ed98-e8d2-4bdb-95d7-751262559083 https://pixeldrain.com/api/file/ && echo
+
+          
