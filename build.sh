@@ -244,15 +244,6 @@ color_echo "$green" "编译成功! 耗时: ${MINUTES}分${SECONDS}秒"
 
 ANY_KERNEL_DIR="$SCRIPT_DIR/anykernel"
 
-# Clonar AnyKernel3 desde tu repo
-rm -rf "$ANY_KERNEL_DIR"
-git clone -b Marble-Glow39 https://github.com/LeanxModulostk/AnyKernel3.git "$ANY_KERNEL_DIR"
-
-if [ ! -d "$ANY_KERNEL_DIR" ]; then
-    echo "❌ Error: No se pudo clonar AnyKernel3"
-    exit 1
-fi
-
 cp "$IMAGE_PATH" "$ANY_KERNEL_DIR"
 
 # 创建ZIP文件名
