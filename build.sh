@@ -233,9 +233,7 @@ ZIP_NAME="${TARGET_DEVICE}_${KERNEL_NAME}-${KERNEL_VERSION}_${KSU_STR}_$(date +%
 color_echo "$green" "Crear paquete flash: $ZIP_NAME"
 (cd "$ANY_KERNEL_DIR" && zip -r9 "$ZIP_NAME" ./* -x .git .gitignore out/ ./*.zip)
 
-mv "$ANY_KERNEL_DIR/$ZIP_NAME" "$BUILD_DIR/"
-
-color_echo "$green" "¡Completo! El paquete flash se ha guardado en: [$BUILD_DIR/$ZIP_NAME]"
+color_echo "$green" "¡Completo! El paquete flash se ha guardado en: [$ANY_KERNEL_DIR/$ZIP_NAME]"
 
 color_echo "$green" "ALL DONE"
 
