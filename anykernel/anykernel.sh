@@ -4,7 +4,7 @@
 ### AnyKernel setup
 # global properties
 properties() { '
-kernel.string=GlowX Kernel By AviderMin
+kernel.string=GlowXXX Kernel By Lean
 do.devicecheck=1
 do.modules=0
 do.systemless=1
@@ -66,15 +66,15 @@ is_mounted() { mount | grep -q " $1 "; }
 
 
 get_keycheck_result() {
-	# Default behavior:
-	# - press Vol+: return true (0)
-	# - press Vol-: return false (1)
+	# Comportamiento por defecto:
+	# - presionar Vol+: retorna verdadero (0)
+	# - presionar Vol-: retorna falso (1)
 
 	local rc_1 rc_2
 
 	while true; do
-		# The first execution responds to the button press event,
-		# the second execution responds to the button release event.
+		# La primera ejecución responde al evento de pulsar el botón,
+		# la segunda ejecución responde al evento de soltar el botón.
 		${bin}/keycheck; rc_1=$?
 		${bin}/keycheck; rc_2=$?
 		[ "$rc_1" == "$rc_2" ] || continue
@@ -94,15 +94,15 @@ keycode_select() {
 		shift
 	done
 	ui_print "#"
-	ui_print "# 音量+ = 是, 音量- = 否."
-	ui_print "# 请按键..."
+	ui_print "# Vol+ = Sí, Vol- = No."
+	ui_print "# Por favor, presiona un botón..."
 	get_keycheck_result
 	r_keycode=$?
 	ui_print "#"
 	if [ "$r_keycode" -eq "0" ]; then
-		ui_print "- 你选择了: 是."
+		ui_print "- Has seleccionado: Sí."
 	else
-		ui_print "- 你选择了: 否."
+		ui_print "- Has seleccionado: No."
 	fi
 	ui_print " "
 	return $r_keycode
@@ -130,21 +130,21 @@ bytes_to_mb() {
 }
 
 check_super_device_size() {
-	# Check super device size
+	# Verificar tamaño del dispositivo super
 	local block_device_size block_device_size_lp
 
 	block_device_size=$(get_size /dev/block/by-name/super) || \
-		abort "! 读取 super 分区大小失败 (by blockdev)!"
+		abort "! ¡Error al leer el tamaño de la partición super (vía blockdev)!"
 	block_device_size_lp=$(${bin}/lpdump 2>/dev/null | grep -m1 -E 'Size: [[:digit:]]+ bytes$' | awk '{print $2}') || \
-		abort "! 读取 super 分区大小失败 (by lpdump)!"
-	ui_print "- super 分区大小:"
-	ui_print "  - Read by blockdev: $block_device_size"
-	ui_print "  - Read by lpdump: $block_device_size_lp"
+		abort "! ¡Error al leer el tamaño de la partición super (vía lpdump)!"
+	ui_print "- Tamaño de la partición super:"
+	ui_print "  - Leído por blockdev: $block_device_size"
+	ui_print "  - Leído por lpdump: $block_device_size_lp"
 	[ "$block_device_size" == "9663676416" ] && [ "$block_device_size_lp" == "9663676416" ] || \
-		abort "! super 分区大小不匹配!"
+		abort "! ¡El tamaño de la partición super no coincide!"
 }
 
-# copy_gpu_pwrlevels_conf <orig dtb file> <new dtb file>
+# copy_gpu_pwrlevels_conf <archivo dtb original> <nuevo archivo dtb>
 copy_gpu_pwrlevels_conf() {
 	local orig_dtb=$1
 	local new_dtb=$2
@@ -152,13 +152,13 @@ copy_gpu_pwrlevels_conf() {
 	local PWRLEVELS_NODE="${KGSL_NODE}/qcom,gpu-pwrlevels"
 	local node reg gpu_freq bus_freq bus_min bus_max level cx_level acd_level initial_pwrlevel
 
-	# Clear the gpu frequency and voltage configuration of new_dtb
+	# Limpiar la configuración de frecuencia y voltaje de la GPU de new_dtb
 	for node in $(${bin}/fdtget "$new_dtb" "$PWRLEVELS_NODE" -l); do
 		${bin}/fdtput "$new_dtb" -r "/soc/qcom,kgsl-3d0@3d00000/qcom,gpu-pwrlevels/${node}"
 	done
 
 	for node in $(${bin}/fdtget "$orig_dtb" /soc/qcom,kgsl-3d0@3d00000/qcom,gpu-pwrlevels -l | sort -r); do
-		# Read
+		# Leer
 		      reg=$(${bin}/fdtget "$orig_dtb" "${PWRLEVELS_NODE}/${node}" "reg" -tu)
 		 gpu_freq=$(${bin}/fdtget "$orig_dtb" "${PWRLEVELS_NODE}/${node}" "qcom,gpu-freq" -tu)
 		 bus_freq=$(${bin}/fdtget "$orig_dtb" "${PWRLEVELS_NODE}/${node}" "qcom,bus-freq" -tu)
@@ -168,7 +168,7 @@ copy_gpu_pwrlevels_conf() {
 		 cx_level=$(${bin}/fdtget "$orig_dtb" "${PWRLEVELS_NODE}/${node}" "qcom,cx-level" -tu)
 		acd_level=$(${bin}/fdtget "$orig_dtb" "${PWRLEVELS_NODE}/${node}" "qcom,acd-level" -tx)
 
-		# Write
+		# Escribir
 		${bin}/fdtput "$new_dtb" -c "${PWRLEVELS_NODE}/${node}"
 		${bin}/fdtput "$new_dtb" "${PWRLEVELS_NODE}/${node}" "qcom,cx-level"  "$cx_level" -tu
 		${bin}/fdtput "$new_dtb" "${PWRLEVELS_NODE}/${node}" "qcom,acd-level" "$acd_level" -tx
@@ -190,12 +190,11 @@ random_strings() {
 	cat /dev/urandom | tr -dc 'a-zA-Z' | head -c $len
 }
 
-# Check firmware
+# Verificar firmware
 if strings /dev/block/bootdevice/by-name/xbl_config${slot} | grep -q 'led_blink'; then
-	ui_print "检测到 HyperOS 固件!"
+	ui_print "¡Firmware HyperOS detectado!"
 	is_hyperos_fw=true
 	is_hyperos_fw_with_new_adsp2=false
-	is_hyperos_fw_with_newer_adsp2=false
 	if is_mounted /vendor/firmware_mnt && [ -d /vendor/firmware_mnt/image ]; then
 		modem_mount_path=/vendor/firmware_mnt
 	else
@@ -208,18 +207,14 @@ if strings /dev/block/bootdevice/by-name/xbl_config${slot} | grep -q 'led_blink'
 		if [ -z "$modem_mount_path" ]; then
 			mkdir ${home}/_modem_mnt
 			mount /dev/block/bootdevice/by-name/modem${slot} ${home}/_modem_mnt -o ro || \
-				abort "! 无法挂载 modem partition!"
+				abort "! ¡No se puede montar la partición modem!"
 			modem_mount_path=${home}/_modem_mnt
 		fi
 	fi
 
 	if strings "${modem_mount_path}/image/adsp2.b18" | grep -q 'audiostatus'; then
-		ui_print "检测到新版本 adsp2 固件!"
+		ui_print "¡Nueva versión de firmware adsp2 detectada!"
 		is_hyperos_fw_with_new_adsp2=true
-		if strings "${modem_mount_path}/image/adsp2.b18" | grep -q 'max_life_vol'; then
-			ui_print "检测到比新版本还新的 adsp2 固件!"
-			is_hyperos_fw_with_newer_adsp2=true
-		fi
 	fi
 
 	if [ -d "${home}/_modem_mnt" ]; then
@@ -229,65 +224,58 @@ if strings /dev/block/bootdevice/by-name/xbl_config${slot} | grep -q 'led_blink'
 
 	unset modem_mount_path
 else
-	ui_print "检测到 MIUI14 固件!"
+	ui_print "¡Firmware MIUI14 detectado!"
 	is_hyperos_fw=false
 fi
 
-if ! ${is_hyperos_fw}; then
-	ui_print " " "抱歉! GlowX Kernel 不支持 MIUI14 固件!"
-	sleep 3
-	abort "中止..."
-fi
-unset is_hyperos_fw
-
-# Staging unmodified partition images
+# Preparar imágenes de particiones no modificadas
 mkdir -p ${home}/_orig
 cp ${home}/boot.img ${home}/_orig/boot.img
 
-# Check snapshot status
-# Technical details: https://blog.xzr.moe/archives/30/
+# Verificar estado del snapshot
+# Detalles técnicos: https://blog.xzr.moe/archives/30/
 ${bin}/snapshotupdater_static dump &>/dev/null
 rc=$?
 if [ "$rc" != 0 ]; then
 	ui_print " "
-	ui_print "无法通过 snapshotupdater_static 读取快照状态 rc=$rc."
+	ui_print "No se puede leer el estado del snapshot vía snapshotupdater_static rc=$rc."
 	if ${BOOTMODE}; then
-		ui_print "试试用其他 app 安装."
-		ui_print "推荐 KernelFlasher:"
+		ui_print "Intenta instalar con otra app."
+		ui_print "Recomendado KernelFlasher:"
 		ui_print "  https://github.com/capntrips/KernelFlasher/releases"
 	fi
-	abort "中止..."
+	abort "Abortando..."
 fi
 snapshot_status=$(${bin}/snapshotupdater_static dump 2>/dev/null | grep '^Update state:' | awk '{print $3}')
-ui_print "当前快照状态: $snapshot_status"
+ui_print "Estado actual del snapshot: $snapshot_status"
 if [ "$snapshot_status" != "none" ]; then
 	ui_print " "
-	ui_print "看起来你刚刚更新了 rom."
-	ui_print "请先使用 TWRP 高级菜单中的 \"合并快照\" 功能"
-	ui_print "以立即完成快照合并."
-	abort "中止..."
+	ui_print "Parece que acabas de actualizar la rom."
+	ui_print "Por favor, usa primero la función \"Fusionar snapshot\" en el menú avanzado de TWRP"
+	ui_print "para completar la fusión del snapshot inmediatamente."
+	abort "Abortando..."
 fi
 unset rc snapshot_status
 
-# Check rom type
+# Verificar tipo de rom
 is_miui_rom=false
 is_aospa_rom=false
 is_oss_kernel_rom=false
-if [ -f /system/framework/MiuiBooster.jar ] && keycode_select "你当前的 rom 是 HyperOS 吗? (我猜是的)"; then
+if [ -f /system/framework/MiuiBooster.jar ] && keycode_select "¿Tu rom actual es HyperOS? (Supongo que sí)"; then
 	is_miui_rom=true
-elif cat /system/build.prop | grep -qi 'aospa' && keycode_select "你当前的 rom 是 AOSPA 吗? (我猜是的)"; then
+elif cat /system/build.prop | grep -qi 'aospa' && keycode_select "¿Tu rom actual es AOSPA? (Supongo que sí)"; then
 	is_aospa_rom=true
-elif keycode_select "你的 rom 是基于 OSS 内核的吗?"; then
+elif keycode_select "¿Tu rom está basada en kernel OSS?"; then
 	is_oss_kernel_rom=true
 fi
 
 strings ${home}/Image 2>/dev/null | grep -E -m1 'Linux version.*#' > ${home}/vertmp
 
-# Check vendor_dlkm partition status
+# Verificar estado de la partición vendor_dlkm
 [ -d /vendor_dlkm ] || mkdir /vendor_dlkm
 is_mounted /vendor_dlkm || \
 	mount /vendor_dlkm -o ro || mount /dev/block/mapper/vendor_dlkm${slot} /vendor_dlkm -o ro || \
-		abort "! 无法挂载 /vendor_dlkm"
+		abort "! No se puede montar /vendor_dlkm"
 
 do_backup_flag=false
 if [ ! -f /vendor_dlkm/lib/modules/vertmp ]; then
@@ -296,19 +284,20 @@ fi
 $BOOTMODE || umount /vendor_dlkm
 
 
-# Fix unable to mount image as read-write in recovery
+# Solucionar incapacidad de montar imagen como lectura-escritura en recovery
 $BOOTMODE || setenforce 0
 
 ui_print " "
-ui_print "- 正在解包内核模块..."
-modules_pkg=${home}/_modules_hyperos.7z
-[ -f $modules_pkg ] || abort "! 找不到 ${modules_pkg}!"
+ui_print "- Desempaquetando módulos del kernel..."
+if ${is_hyperos_fw}; then
+	modules_pkg=${home}/_modules_hyperos.7z
+else
+	modules_pkg=${home}/_modules_miui.7z
+fi
+[ -f $modules_pkg ] || abort "! ¡No se encuentra ${modules_pkg}!"
 ${bin}/7za x $modules_pkg -o${home}/ && [ -d ${home}/_vendor_boot_modules ] && [ -d ${home}/_vendor_dlkm_modules ] || \
-	abort "! 无法解包 ${modules_pkg}!"
-if ${is_hyperos_fw_with_newer_adsp2}; then
-	cp -f ${home}/_alt/NEW2-qti_battery_charger_main.ko ${home}/_vendor_dlkm_modules/qti_battery_charger_main.ko
-	cp -f ${home}/_alt/NEW2-qti_battery_charger_main.ko ${home}/_vendor_boot_modules/qti_battery_charger_main.ko
-elif ${is_hyperos_fw_with_new_adsp2}; then
+	abort "! ¡No se puede desempaquetar ${modules_pkg}!"
+if ${is_hyperos_fw} && ${is_hyperos_fw_with_new_adsp2}; then
 	cp -f ${home}/_alt/NEW-qti_battery_charger_main.ko ${home}/_vendor_dlkm_modules/qti_battery_charger_main.ko
 	cp -f ${home}/_alt/NEW-qti_battery_charger_main.ko ${home}/_vendor_boot_modules/qti_battery_charger_main.ko
 fi
@@ -318,10 +307,10 @@ vendor_dlkm_modules_options_file=${home}/_vendor_dlkm_modules/modules.options
 [ -f $vendor_dlkm_modules_options_file ] || touch $vendor_dlkm_modules_options_file
 
 # xiaomi_touch.ko
-if [ -n "$(ls /vendor/bin/hw/vendor.lineage.touch@* 2>/dev/null)" ]; then
+if ${is_hyperos_fw} && [ -f /vendor/bin/hw/vendor.lineage.touch@* ]; then
 	ui_print " "
-	ui_print "- 检测到 Lineage OSS xiaomi touch HAL."
-	ui_print "- 使用备选的触屏驱动."
+	ui_print "- Lineage OSS xiaomi touch HAL detectado."
+	ui_print "- Usando controlador táctil alternativo."
 	cp -f ${home}/_alt/xiaomi_touch_los/* ${home}/_vendor_dlkm_modules/
 	sed -i \
 	    's/\/vendor\/lib\/modules\/xiaomi_touch\.ko:/\/vendor\/lib\/modules\/xiaomi_touch\.ko:\ \/vendor\/lib\/modules\/panel_event_notifier\.ko/g' \
@@ -330,37 +319,43 @@ fi
 
 # goodix_core.ko
 if keycode_select \
-    "是否总是启用 360HZ 触控采样率?" \
+    "¿Habilitar siempre la tasa de muestreo táctil de 360HZ?" \
     " " \
-    "提示:" \
-    "总是启用 360HZ 触控采样率并不能提升你的日常" \
-    "使用体验, 并且可能增加耗电." \
+    "Nota:" \
+    "Habilitar siempre 360HZ no mejorará tu experiencia" \
+    "diaria, y puede aumentar el consumo de batería." \
 	" "; then
 	echo "options goodix_core force_high_report_rate=y" >> $vendor_dlkm_modules_options_file
 fi
 
 # qti_battery_charger_main.ko
+if ${is_hyperos_fw}; then
+	modname_qti_battery_charger=qti_battery_charger_main
+else
+	modname_qti_battery_charger=qti_battery_charger
+fi
+
 qti_battery_charger_mod_options=""
 if keycode_select \
-    "是否显示更真实的电量百分比?" \
+    "¿Mostrar porcentaje de batería más realista?" \
     " " \
-    "提示:" \
-    "这有可能会导致设备难以充满电到 100%." \
+    "Nota:" \
+    "Esto podría causar que el dispositivo sea difícil de cargar al 100%." \
     " "; then
 	qti_battery_charger_mod_options="${qti_battery_charger_mod_options} report_real_capacity=y"
 fi
 
 do_fix_battery_usage=false
-if ${is_oss_kernel_rom}; then
+if ${is_fixed_qbc_driver} || ${is_oss_kernel_rom}; then
 	do_fix_battery_usage=true
 elif ${is_miui_rom} || ${is_aospa_rom}; then
 	do_fix_battery_usage=false
 elif keycode_select \
-    "是否修复电池使用情况数据异常的问题?" \
+    "¿Reparar datos anómalos del uso de la batería?" \
     " " \
-    "提示:" \
-    "如果你发现系统设置中电池使用情况数据" \
-    "无法正常显示, 请选择是." \
+    "Nota:" \
+    "Si encuentras que los datos de uso de la batería en" \
+    "Configuración del sistema no se muestran normalmente, elige Sí." \
 	" "; then
 	do_fix_battery_usage=true
 fi
@@ -373,20 +368,20 @@ if [ -n "${qti_battery_charger_mod_options}" ]; then
 	qti_battery_charger_mod_options=$(echo "$qti_battery_charger_mod_options" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
 	echo "options qti_battery_charger_main ${qti_battery_charger_mod_options}" >> $vendor_dlkm_modules_options_file
 fi
-unset qti_battery_charger_mod_options
+unset modname_qti_battery_charger qti_battery_charger_mod_options
 
-# Alternative wired headset buttons mode
+# Modo alternativo de botones de auriculares con cable
 use_wired_btn_altmode=false
 if ${is_miui_rom}; then
 	use_wired_btn_altmode=false
 elif ${is_oss_kernel_rom} || ${is_aospa_rom}; then
 	use_wired_btn_altmode=true
 elif keycode_select \
-    "是否使用备选的有线耳机按键模式?" \
+    "¿Usar modo alternativo para botones de auriculares con cable?" \
     " " \
-    "提示:" \
-    "如果你发现有线耳机的音量加减键不好使, 请选择是." \
-    "如果你在使用 MIUI/HyperOS rom, 请选择否." \
+    "Nota:" \
+    "Si encuentras que los botones de volumen de los auriculares con cable no funcionan bien, elige Sí." \
+    "Si estás usando una rom MIUI/HyperOS, elige No." \
     " "; then
 	use_wired_btn_altmode=true
 fi
@@ -395,84 +390,67 @@ if ${use_wired_btn_altmode}; then
 fi
 unset use_wired_btn_altmode
 
-# OSS msm_drm.ko
-use_oss_msm_drm=false
-if ${is_oss_kernel_rom} || ${is_aospa_rom} || [ -f /vendor/bin/sensor-notifier ]; then
-	use_oss_msm_drm=true
-elif ! ${is_miui_rom}; then  # For roms ported from other OS
+# msm_drm.ko OSS
+if ${is_hyperos_fw}; then
 	use_oss_msm_drm=false
-elif keycode_select \
-    "是否使用开源的显示驱动?" \
-    " " \
-    "提示:" \
-    "如果你不知道这意味着什么, 请选择否." \
-	" "; then
-	use_oss_msm_drm=true
-fi
-if ${use_oss_msm_drm}; then
-	if [ -f /vendor/etc/displayconfig/display_id_4630946370515662721.xml ] || [ -f /vendor/etc/displayconfig/display_id_4630946480857061761.xml ]; then
-		# https://github.com/cupid-development/android_device_xiaomi_marble/commit/eee64379280d5bc680e91371679d788b63fe5039
-		cp -f ${home}/_alt/OSS-msm_drm-2.ko ${home}/_vendor_dlkm_modules/msm_drm.ko
-	else
-		cp -f ${home}/_alt/OSS-msm_drm.ko ${home}/_vendor_dlkm_modules/msm_drm.ko
+	if ${is_oss_kernel_rom} || ${is_aospa_rom} || [ -f /vendor/bin/sensor-notifier ]; then
+		use_oss_msm_drm=true
+	elif ! ${is_miui_rom}; then  # For roms ported from other OS
+		use_oss_msm_drm=false
+	elif keycode_select \
+	    "¿Usar controlador de pantalla de código abierto?" \
+	    " " \
+	    "Nota:" \
+	    "Si no sabes qué significa esto, elige No."; then
+		use_oss_msm_drm=true
 	fi
+	if ${use_oss_msm_drm}; then
+		if [ -f /vendor/etc/displayconfig/display_id_4630946370515662721.xml ] || [ -f /vendor/etc/displayconfig/display_id_4630946480857061761.xml ]; then
+			# https://github.com/cupid-development/android_device_xiaomi_marble/commit/eee64379280d5bc680e91371679d788b63fe5039
+			cp -f ${home}/_alt/OSS-msm_drm-2.ko ${home}/_vendor_dlkm_modules/msm_drm.ko
+		else
+			cp -f ${home}/_alt/OSS-msm_drm.ko ${home}/_vendor_dlkm_modules/msm_drm.ko
+		fi
+	fi
+	unset use_oss_msm_drm
 fi
-unset use_oss_msm_drm
 
-# OSS camera.ko
-use_oss_camera_driver=false
-if ${is_oss_kernel_rom} || ${is_aospa_rom}; then
-	use_oss_camera_driver=true
-elif ! ${is_miui_rom}; then  # For roms ported from other OS
-	use_oss_camera_driver=false
-elif keycode_select \
-    "是否使用开源的相机驱动?" \
-    " " \
-    "提示:" \
-    "如果你不知道这意味着什么, 请选择否." \
-	" "; then
-	use_oss_camera_driver=true
-fi
-if ${use_oss_camera_driver}; then
-	cp -f ${home}/_alt/OSS-camera.ko ${home}/_vendor_dlkm_modules/camera.ko
-fi
-unset use_oss_camera_driver
-
-# OSS ir-spi.ko
-use_oss_ir_driver=false
-if ${is_miui_rom}; then
+# ir-spi.ko OSS
+if ${is_hyperos_fw}; then
 	use_oss_ir_driver=false
-elif [ -n "$(ls /vendor/bin/hw/android.hardware.ir@* 2>/dev/null)" ]; then
-	ui_print " " "- 检测到 Xiaomi stock IR HAL. 使用 stock 红外驱动."
-	use_oss_ir_driver=false
-elif [ -f /vendor/bin/hw/android.hardware.ir-service.xiaomi ] || [ -f /vendor/bin/hw/android.hardware.ir-service.lineage ]; then
-	ui_print " " "- 检测到 Lineage OSS IR HAL. 使用 OSS 红外驱动."
-	use_oss_ir_driver=true
-elif keycode_select \
-    "是否使用开源的红外驱动?" \
-    " " \
-    "提示:" \
-    "如果你正在使用 AOSP rom 并且发现红外遥控" \
-    "不好使, 请选择是." \
-    "如果你在使用 MIUI/HyperOS rom, 请选择否." \
-	" "; then
-	use_oss_ir_driver=true
+	if ${is_miui_rom}; then
+		use_oss_ir_driver=false
+	elif [ -f /vendor/bin/hw/android.hardware.ir@* ]; then
+		ui_print " " "- HAL IR stock de Xiaomi detectado. Usando controlador IR stock."
+		use_oss_ir_driver=false
+	elif [ -f /vendor/bin/hw/android.hardware.ir-service.xiaomi ]; then
+		ui_print " " "- HAL IR OSS de Lineage detectado. Usando controlador IR OSS."
+		use_oss_ir_driver=true
+	elif keycode_select \
+	    "Usar controlador infrarrojo de código abierto?" \
+	    " " \
+	    "Nota:" \
+	    "Si estás usando una rom AOSP y encuentras que el control remoto" \
+	    "infrarrojo no funciona bien, elige Sí." \
+	    "Si estás usando una rom MIUI/HyperOS, elige No."; then
+		use_oss_ir_driver=true
+	fi
+	if ${use_oss_ir_driver}; then
+		cp -f ${home}/_alt/OSS-ir-spi.ko ${home}/_vendor_dlkm_modules/ir-spi.ko
+	fi
+	unset use_oss_ir_driver
 fi
-if ${use_oss_ir_driver}; then
-	cp -f ${home}/_alt/OSS-ir-spi.ko ${home}/_vendor_dlkm_modules/ir-spi.ko
-fi
-unset use_oss_ir_driver
 
-# OSS zram.ko & zsmalloc.ko
+# zram.ko & zsmalloc.ko OSS
 if ${is_miui_rom}; then
 	if ! keycode_select \
-	    "是否使用开源的 ZRAM 内核模块?" \
+	    "¿Usar módulos del kernel ZRAM de código abierto?" \
 	    " " \
-	    "提示:" \
-	    "使用开源的 ZRAM 内核模块意味着你将放弃小米" \
-	    "针对 MIUI/HyperOS 的 ZRAM 的特殊优化." \
+	    "Nota:" \
+	    "Usar los módulos del kernel ZRAM de código abierto significa que renunciarás a las" \
+	    "optimizaciones especiales de Xiaomi para ZRAM en MIUI/HyperOS." \
 	    " " \
-	    "如果你不知道这意味着什么, 请选择否." \
+	    "Si no sabes qué significa esto, elige No." \
 		" "; then
 		cp -f ${home}/_alt/MI-zram.ko ${home}/_vendor_dlkm_modules/zram.ko
 		cp -f ${home}/_alt/MI-zsmalloc.ko ${home}/_vendor_dlkm_modules/zsmalloc.ko
@@ -481,76 +459,28 @@ fi
 
 unset vendor_dlkm_modules_options_file
 
-# ===== Optional: perfmgr.ko =====
-
-include_perfmgr=false
-
-if [ -f "${home}/_extra_modules/perfmgr.ko" ]; then
-    if keycode_select \
-        "是否安装 perfmgr.ko 内核模块?" \
-        " " \
-        "提示:" \
-        "该模块依赖于云控或者第三方调度." \
-        "可能不能带来提升,甚至会使温度升高." \
-        "用于调度/频控增强；若与 ROM 自带策略冲突请选否." \
-        " "; then
-        include_perfmgr=true
-    fi
-else
-    ui_print " "
-    ui_print "- _extra_modules/perfmgr.ko not found, skipping optional installation."
-fi
-
-if ${include_perfmgr}; then
-    # 确保目标目录存在 / Ensure target directory exists
-    mkdir -p "${home}/_vendor_boot_modules"
-
-    # 复制 perfmgr.ko 到 vendor_boot_modules / Copy perfmgr.ko to vendor_boot_modules
-    cp -f "${home}/_extra_modules/perfmgr.ko" "${home}/_vendor_boot_modules/" \
-        || abort "! 无法复制 perfmgr.ko"
-
-    # 追加 modules.dep 依赖 / Append dependencies to modules.dep
-    dep_line="/lib/modules/perfmgr.ko: /lib/modules/qcom-dcvs.ko /lib/modules/dcvs_fp.ko /lib/modules/qcom_rpmh.ko /lib/modules/cmd-db.ko /lib/modules/qcom_ipc_logging.ko /lib/modules/minidump.ko /lib/modules/smem.ko /lib/modules/sched-walt.ko /lib/modules/qcom-cpufreq-hw.ko /lib/modules/metis.ko /lib/modules/mi_schedule.ko"
-    [ -f "${home}/_vendor_boot_modules/modules.dep" ] || touch "${home}/_vendor_boot_modules/modules.dep"
-    if ! grep -q "^/lib/modules/perfmgr\.ko:" "${home}/_vendor_boot_modules/modules.dep"; then
-        [ -s "${home}/_vendor_boot_modules/modules.dep" ] && echo "" >> "${home}/_vendor_boot_modules/modules.dep"
-        echo "$dep_line" >> "${home}/_vendor_boot_modules/modules.dep"
-    fi
-
-    # 追加到 modules.load / Append to modules.load
-    [ -f "${home}/_vendor_boot_modules/modules.load" ] || touch "${home}/_vendor_boot_modules/modules.load"
-    if ! grep -q "^perfmgr\.ko$" "${home}/_vendor_boot_modules/modules.load"; then
-        [ -s "${home}/_vendor_boot_modules/modules.load" ] && echo "" >> "${home}/_vendor_boot_modules/modules.load"
-        echo "perfmgr.ko" >> "${home}/_vendor_boot_modules/modules.load"
-    fi
-
-    ui_print "- perfmgr.ko installed to vendor_boot."
-fi
-# ===== End perfmgr.ko =====
-
-
-# Disguised the GPU model as Adreno730v3
+# Disfrazar el modelo de GPU como Adreno730v3
 disguised_adreno730=false
-
 if keycode_select \
-    "是否伪装 GPU 型号为 Adreno730?" \
+    "¿Disfrazar el modelo de GPU como Adreno730?" \
     " " \
-    "提示:" \
-    "骁龙 8+ Gen1 的 GPU 型号即为 Adreno730." \
-    "将 GPU 型号伪装成 Adreno730 或许可以在" \
-    "某些手游中解锁更高的画质或帧率," \
-    "但副作用未知." \
+    "Nota:" \
+    "La GPU del Snapdragon 8+ Gen1 es precisamente Adreno730." \
+    "Disfrazar el modelo de GPU como Adreno730 quizás pueda" \
+    "desbloquear mejores gráficos o tasa de fotogramas en" \
+    "algunos juegos móviles," \
+    "pero se desconocen los efectos secundarios." \
 	" "; then
 	disguised_adreno730=true
 fi
 
-# Do not load some Xiaomi special modules in AOSP roms
+# No cargar algunos módulos especiales de Xiaomi en ROMs AOSP
 if ! ${is_miui_rom}; then
-	# millet related modules
+	# Módulos relacionados con millet
 	for module_name in millet_core millet_binder millet_hs millet_oem_cgroup millet_pkg millet_sig binder_gki; do
 		echo "blocklist $module_name" >> ${home}/_vendor_dlkm_modules/modules.blocklist
 	done
-	# Others
+	# Otros
 	for module_name in extend_reclaim mi_freqwdg mi_memory perf_helper; do
 		echo "blocklist $module_name" >> ${home}/_vendor_boot_modules/modules.blocklist
 	done
@@ -560,30 +490,30 @@ if ! ${is_miui_rom}; then
 fi
 
 if ! keycode_select \
-    "这是最后一个选项." \
+    "Esta es la última opción." \
     " " \
-    "选择是以正式开始安装." \
-    "选择否以取消安装." \
+    "Selecciona Sí para comenzar la instalación formal." \
+    "Selecciona No para cancelar la instalación." \
 	" "; then
-	abort "用户中止."
+	abort "Cancelado por el usuario."
 fi
 
 ui_print " "
-if true; then  # I don't want to adjust the indentation of the code block below, so leave it as is.
+if true; then  # No quiero ajustar la sangría del bloque de código siguiente, así que lo dejo como está.
 	do_check_super_device_size=false
 
-	# Dump vendor_dlkm partition image
+	# Volcar imagen de la partición vendor_dlkm
 	dd if=/dev/block/mapper/vendor_dlkm${slot} of=${home}/vendor_dlkm.img
 	cp ${home}/vendor_dlkm.img ${home}/_orig/vendor_dlkm.img
 	vendor_dlkm_block_size=$(get_size /dev/block/mapper/vendor_dlkm${slot})
 
-	# Backup kernel and vendor_dlkm image
+	# Hacer copia de seguridad del kernel y de la imagen vendor_dlkm
 	if ${do_backup_flag}; then
-		ui_print "- 看起来你是第一次安装 GlowX Kernel."
+		ui_print "- Parece que es tu primera vez instalando GlowX Kernel."
 
-		if keycode_select "要备份当前的内核吗?"; then
-			ui_print "- 正在备份 kernel, vendor_boot, vendor_dlkm"
-			ui_print "  以及 dtbo 分区..."
+		if keycode_select "¿Hacer copia de seguridad del kernel actual?"; then
+			ui_print "- Haciendo copia de seguridad de kernel, vendor_boot, vendor_dlkm"
+			ui_print "  y de la partición dtbo..."
 
 			backup_package=/sdcard/GlowX-restore-kernel-$(file_getprop /system/build.prop ro.build.version.incremental)-$(date +"%Y%m%d-%H%M%S").zip
 
@@ -600,18 +530,18 @@ if true; then  # I don't want to adjust the indentation of the code block below,
 			sync
 
 			ui_print " "
-			ui_print "- 当前的 kernel, vendor_boot, vendor_dlkm"
-			ui_print "  以及 dtbo 已备份到:"
+			ui_print "- El kernel, vendor_boot, vendor_dlkm"
+			ui_print "  y dtbo actuales han sido respaldados en:"
 			ui_print "  $backup_package"
-			ui_print "- 如果遇到意外情况, 或者想要恢复到原版内核,"
-			ui_print "  请在 TWRP 或某些 app 中刷入它."
+			ui_print "- Si encuentras problemas o quieres restaurar el kernel original,"
+			ui_print "  flashealo desde TWRP o alguna aplicación."
 			ui_print " "
 			touch ${home}/do_backup_flag
 
 			if ! $BOOTMODE && [ ! -d /twres ]; then
 				ui_print "============================================================"
-				ui_print "! Warning: Please transfer the backup file just generated to"
-				ui_print "! another device via ADB, as it will be lost after reboot!"
+				ui_print "! Advertencia: Por favor, transfiere el archivo de respaldo recién generado a"
+				ui_print "! otro dispositivo via ADB, ya que se perderá después del reinicio!"
 				ui_print "============================================================"
 				ui_print " "
 				sleep 3
@@ -621,7 +551,7 @@ if true; then  # I don't want to adjust the indentation of the code block below,
 		fi
 	fi
 
-	ui_print "- 正在解包 /vendor_dlkm 分区..."
+	ui_print "- Desempaquetando la partición /vendor_dlkm..."
 	extract_vendor_dlkm_dir=${home}/_extract_vendor_dlkm_$(random_strings 3)
 	mkdir -p $extract_vendor_dlkm_dir
 	vendor_dlkm_is_ext4=false
@@ -629,43 +559,43 @@ if true; then  # I don't want to adjust the indentation of the code block below,
 	sync
 
 	if ${vendor_dlkm_is_ext4}; then
-		ui_print "- /vendor_dlkm 似乎是 ext4 文件系统."
+		ui_print "- /vendor_dlkm parece ser un sistema de archivos ext4."
 		mount ${home}/vendor_dlkm.img $extract_vendor_dlkm_dir -o ro -t ext4 || \
-			abort "! 不支持的文件系统!"
+			abort "! Sistema de archivos no soportado!"
 		vendor_dlkm_full_space=$(df -B1 | grep -E -m1 "$(basename $extract_vendor_dlkm_dir)\$" | awk '{print $2}')
 		vendor_dlkm_used_space=$(df -B1 | grep -E -m1 "$(basename $extract_vendor_dlkm_dir)\$" | awk '{print $3}')
 		vendor_dlkm_free_space=$(df -B1 | grep -E -m1 "$(basename $extract_vendor_dlkm_dir)\$" | awk '{print $4}')
 		vendor_dlkm_stock_modules_size=$(get_size ${extract_vendor_dlkm_dir}/lib/modules)
-		ui_print "- /vendor_dlkm 分区空间:"
-		ui_print "  - 总空间: $(bytes_to_mb $vendor_dlkm_full_space)"
-		ui_print "  - 已用空间: $(bytes_to_mb $vendor_dlkm_used_space)"
-		ui_print "  - 可用空间: $(bytes_to_mb $vendor_dlkm_free_space)"
+		ui_print "- Espacio de la partición /vendor_dlkm:"
+		ui_print "  - Espacio total: $(bytes_to_mb $vendor_dlkm_full_space)"
+		ui_print "  - Espacio usado: $(bytes_to_mb $vendor_dlkm_used_space)"
+		ui_print "  - Espacio libre: $(bytes_to_mb $vendor_dlkm_free_space)"
 		umount $extract_vendor_dlkm_dir
 
 		vendor_dlkm_new_modules_size=$(get_size ${home}/_vendor_dlkm_modules)
 		vendor_dlkm_need_size=$((vendor_dlkm_used_space - vendor_dlkm_stock_modules_size + vendor_dlkm_new_modules_size + 10*1024*1024))
 		if [ "$vendor_dlkm_need_size" -ge "$vendor_dlkm_full_space" ]; then
-			# Resize vendor_dlkm image
-			ui_print "- /vendor_dlkm 分区没有足够的可用空间!"
-			ui_print "- 尝试扩容..."
+			# Redimensionar imagen vendor_dlkm
+			ui_print "- ¡La partición /vendor_dlkm no tiene suficiente espacio libre!"
+			ui_print "- Intentando expandir..."
 
 			${bin}/e2fsck -f -y ${home}/vendor_dlkm.img
 			vendor_dlkm_resized_size=$(echo $vendor_dlkm_need_size | awk '{printf "%dM", ($1 / 1024 / 1024 + 1)}')
 			${bin}/resize2fs ${home}/vendor_dlkm.img $vendor_dlkm_resized_size || \
-				abort "! 扩容 vendor_dlkm 镜像失败!"
-			ui_print "- 扩容后的 vendor_dlkm.img 镜像大小: ${vendor_dlkm_resized_size}."
-			# e2fsck again
+				abort "! ¡Error al expandir la imagen vendor_dlkm!"
+			ui_print "- Tamaño de la imagen vendor_dlkm.img después de la expansión: ${vendor_dlkm_resized_size}."
+			# e2fsck de nuevo
 			${bin}/e2fsck -f -y ${home}/vendor_dlkm.img
 
 			do_check_super_device_size=true
 			unset vendor_dlkm_resized_size
 		else
-			ui_print "- /vendor_dlkm 分区有足够的可用空间."
+			ui_print "- La partición /vendor_dlkm tiene suficiente espacio libre."
 		fi
 
-		ui_print "- 尝试挂载 vendor_dlkm 镜像为读写..."
+		ui_print "- Intentando montar la imagen vendor_dlkm como lectura/escritura..."
 		mount ${home}/vendor_dlkm.img $extract_vendor_dlkm_dir -o rw -t ext4 || \
-			abort "! 无法挂载 vendor_dlkm 镜像为读写!"
+			abort "! ¡No se pudo montar la imagen vendor_dlkm como lectura/escritura!"
 
 		unset vendor_dlkm_full_space vendor_dlkm_used_space vendor_dlkm_free_space vendor_dlkm_stock_modules_size vendor_dlkm_new_modules_size vendor_dlkm_need_size
 		extract_vendor_dlkm_modules_dir=${extract_vendor_dlkm_dir}/lib/modules
@@ -673,10 +603,10 @@ if true; then  # I don't want to adjust the indentation of the code block below,
 		extract_vendor_dlkm_modules_dir=${extract_vendor_dlkm_dir}/vendor_dlkm/lib/modules
 	fi
 
-	ui_print "- 正在更新 /vendor_dlkm 镜像..."
+	ui_print "- Actualizando la imagen /vendor_dlkm..."
 	rm -f ${extract_vendor_dlkm_modules_dir}/*
 	cp ${home}/_vendor_dlkm_modules/* ${extract_vendor_dlkm_modules_dir}/ || \
-		abort "! 无法更新内核模块! 可用空间不够了?"
+		abort "! ¡Error al actualizar los módulos del kernel! ¿No hay suficiente espacio libre?"
 	cp ${home}/vertmp ${extract_vendor_dlkm_modules_dir}/vertmp
 	sync
 
@@ -689,26 +619,26 @@ if true; then  # I don't want to adjust the indentation of the code block below,
 			echo "vendor_dlkm/lib/modules/$(basename $f) 0 0 0644" >> ${extract_vendor_dlkm_dir}/config/vendor_dlkm_fs_config
 		done
 		echo '/vendor_dlkm/lib/modules/.+ u:object_r:vendor_file:s0' >> ${extract_vendor_dlkm_dir}/config/vendor_dlkm_file_contexts
-		ui_print "- 正在打包 /vendor_dlkm 镜像..."
+		ui_print "- Empaquetando la imagen /vendor_dlkm..."
 		rm -f ${home}/vendor_dlkm.img
 		mkfs_erofs ${extract_vendor_dlkm_dir}/vendor_dlkm ${home}/vendor_dlkm.img || \
-			abort "! 无法打包 /vendor_dlkm 镜像!"
+			abort "! ¡Error al empaquetar la imagen /vendor_dlkm!"
 		rm -rf ${extract_vendor_dlkm_dir}
 
 		if [ "$(get_size ${home}/vendor_dlkm.img)" -gt "$vendor_dlkm_block_size" ]; then
 			do_check_super_device_size=true
 		else
-			# Fill the erofs image file to the same size as the vendor_dlkm partition
+			# Llenar el archivo de imagen erofs al mismo tamaño que la partición vendor_dlkm
 			truncate -c -s $vendor_dlkm_block_size ${home}/vendor_dlkm.img
 		fi
 	fi
 
 	if ${do_check_super_device_size}; then
 		ui_print " "
-		ui_print "- 生成的镜像文件大小大于分区大小."
-		ui_print "- 需要检查 super 分区..."
-		check_super_device_size  # If the check here fails, it will be aborted directly.
-		ui_print "- 通过!"
+		ui_print "- El tamaño del archivo de imagen generado es mayor que el tamaño de la partición."
+		ui_print "- Es necesario verificar la partición super..."
+		check_super_device_size  # Si la verificación aquí falla, se abortará directamente.
+		ui_print "- ¡Aprobado!"
 	fi
 
 	unset do_check_super_device_size vendor_dlkm_block_size vendor_dlkm_is_ext4 extract_vendor_dlkm_dir extract_vendor_dlkm_modules_dir
@@ -716,12 +646,12 @@ fi
 
 unset do_backup_flag
 
-flash_boot # skip ramdisk repack
+flash_boot # omitir reempaquetado de ramdisk
 flash_generic vendor_dlkm
 
-########## FLASH BOOT & VENDOR_DLKM END ##########
+########## FIN DE FLASHEO BOOT & VENDOR_DLKM ##########
 
-# Remove files no longer needed to avoid flashing again.
+# Eliminar archivos no necesarios para evitar flashearlos nuevamente.
 rm ${home}/Image
 rm ${home}/boot.img
 rm ${home}/boot-new.img
@@ -732,27 +662,27 @@ rm ${home}/magisk_patched
 
 touch ${home}/rollback_if_abort_flag
 
-########## FLASH VENDOR_BOOT START ##########
+########## INICIO DE FLASHEO VENDOR_BOOT ##########
 
-## vendor_boot shell variables
+## Variables de shell para vendor_boot
 block=vendor_boot
 is_slot_device=1
 ramdisk_compression=auto
 patch_vbmeta_flag=auto
 no_magisk_check=true
 
-# reset for vendor_boot patching
+# reset para parcheo de vendor_boot
 reset_ak
 
-# Try to fix vendor_ramdisk size and vendor_ramdisk table entry information that was corrupted by old versions of magiskboot.
+# Intentar corregir el tamaño de vendor_ramdisk y la información de la tabla de entradas de vendor_ramdisk dañada por versiones antiguas de magiskboot.
 ${bin}/vendor_boot_fix "$block"
 case $? in
-	0) ui_print " " "- 成功修复 vendor_boot 分区!";;
-	2) ;;  # The vendor_boot partition is normal and does not need to be repaired.
-	*) abort "! 无法修复损坏的 vendor_boot 分区!";;
+	0) ui_print " " "- ¡Partición vendor_boot reparada con éxito!";;
+	2) ;;  # La partición vendor_boot es normal y no necesita reparación.
+	*) abort "! ¡No se puede reparar la partición vendor_boot dañada!";;
 esac
 
-# vendor_boot install
+# Instalación de vendor_boot
 dump_boot
 
 vendor_boot_modules_dir=${ramdisk}/lib/modules
@@ -760,7 +690,7 @@ rm ${vendor_boot_modules_dir}/*
 cp ${home}/_vendor_boot_modules/* ${vendor_boot_modules_dir}/
 set_perm 0 0 0644 ${vendor_boot_modules_dir}/*
 
-${bin}/7za x ${home}/_dtb.7z -o${home}/ || abort "! 无法解包 _dtb.7z!"
+${bin}/7za x ${home}/_dtb.7z -o${home}/ || abort "! ¡No se puede descomprimir _dtb.7z!"
 
 if ${is_oss_kernel_rom}; then
 	mv ${home}/dtbo-1.img ${home}/dtbo.img
@@ -772,7 +702,7 @@ fi
 
 mkdir ${home}/_dtbs
 cp ${split_img}/dtb ${home}/_dtbs/dtb
-dtb_img_splitted=$(${bin}/dtp -i ${home}/_dtbs/dtb | awk '{print $NF}') || abort "! 分割 dtb 文件失败!"
+dtb_img_splitted=$(${bin}/dtp -i ${home}/_dtbs/dtb | awk '{print $NF}') || abort "! ¡Error al dividir el archivo dtb!"
 ukee_dtb=
 for dtb_file in $dtb_img_splitted; do
 	if [ "$(${bin}/fdtget $dtb_file / model -ts)" == "Qualcomm Technologies, Inc. Ukee SoC" ]; then
@@ -780,40 +710,42 @@ for dtb_file in $dtb_img_splitted; do
 		break
 	fi
 done
-[ -z "$ukee_dtb" ] && abort "! 找不到 Ukee dtb 文件!"
+[ -z "$ukee_dtb" ] && abort "! ¡No se puede encontrar el archivo dtb de Ukee!"
 
 if ${disguised_adreno730}; then
 	${bin}/fdtput ${home}/dtb "/soc/qcom,kgsl-3d0@3d00000" "qcom,gpu-model" "Adreno730v3" -ts
 fi
 unset disguised_adreno730
 
-# Copy the gpu frequency and voltage configuration of old dtb to the new dtb
-copy_gpu_pwrlevels_conf "$ukee_dtb" ${home}/dtb
-sync
+# Copiar la configuración de frecuencia y voltaje de la GPU del dtb antiguo al nuevo dtb
+if [ "$(sha1 $ukee_dtb)" != "$(sha1 ${home}/dtb)" ]; then
+	copy_gpu_pwrlevels_conf "$ukee_dtb" ${home}/dtb
+	sync
+fi
 
 rm -rf ${home}/_dtbs
 
 unset dtb_img_splitted ukee_dtb
 
-write_boot  # Since dtbo.img exists in ${home}, the dtbo partition will also be flashed at this time
+write_boot  # Dado que dtbo.img existe en ${home}, la partición dtbo también se flasheará en este momento
 
-########## FLASH VENDOR_BOOT END ##########
+########## FIN DE FLASHEO VENDOR_BOOT ##########
 
-unset is_miui_rom is_aospa_rom is_oss_kernel_rom is_hyperos_fw_with_new_adsp2 is_hyperos_fw_with_newer_adsp2
+unset is_hyperos_fw is_miui_rom is_aospa_rom is_oss_kernel_rom is_hyperos_fw_with_new_adsp2
 
-# Patch vbmeta
+# Parchear vbmeta
 ui_print " "
 for vbmeta_blk in /dev/block/by-name/vbmeta*; do
-	ui_print "- Patching $(basename $vbmeta_blk) ..."
+	ui_print "- Parcheando $(basename $vbmeta_blk) ..."
 	${bin}/vbmeta-disable-verification $vbmeta_blk || {
-		ui_print "! 无法打补丁到 ${vbmeta_blk}!"
-		ui_print "- 如果安装完成后设备无法启动,"
-		ui_print "  请在 TWRP 中手动禁用 AVB."
+		ui_print "! ¡No se puede aplicar parche a ${vbmeta_blk}!"
+		ui_print "- Si el dispositivo no arranca después de completar la instalación,"
+		ui_print "  deshabilite AVB manualmente en TWRP."
 	}
 done
 
 ui_print " "
 ui_print "SourceCodeBase & FlashScript"
-ui_print "Thanks @Pzqqt"
+ui_print "Gracias @Pzqqt & AviderMin"
 
-## end boot install
+## fin de la instalación del boot
